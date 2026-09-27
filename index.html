@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> | hop-ai</title>
+<title>hop-ai</title>
 <style>
 * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
 body { margin: 0; background: #f5f6fb; color: #222; }
@@ -23,10 +23,10 @@ header p { margin: 6px 0 0; font-size: 13px; opacity: .9; }
 </head>
 <body>
 <header>
-<h1>هوش مصنوعی hop خوش  امدید نسخه ۱</h1>
-<p>>
+<h1>هوش مصنوعی hop خوش آمدید نسخه ۱</h1>
+<p></p>
 </header>
-<div class="status">● متصل به سرور رایگان و بدون محدودیتdiv>
+<div class="status">● متصل به سرور رایگان و بدون محدودیت</div>
 <div id="chat">
 <div class="msg bot">سلام! 🌟 من آماده‌ام. هر سوالی داری بپرس، بدون این‌که لازم باشه کاری بکنی.</div>
 </div>
@@ -35,31 +35,56 @@ header p { margin: 6px 0 0; font-size: 13px; opacity: .9; }
 <button id="send" onclick="send()">ارسال</button>
 </div>
 <script>
-let history = [];
+let history = [
+  { role: "system", content: "تو یک دستیار فارسی‌زبان دوستانه مثل هوشا هستی. جواب‌ها را فارسی و روان بده." }
+];
+
+function addMsg(text, cls) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
 async function send(){
   const input = document.getElementById("input");
   const chat = document.getElementById("chat");
   const text = input.value.trim();
   if(!text) return;
-  chat.innerHTML += `<div class="msg user">${text.replace(/</g,"&lt;")}</div>`;
+  addMsg(text, "user");
   input.value = "";
-  chat.scrollTop = chat.scrollHeight;
-  history.push("کاربر: " + text);
-  let fullPrompt = "تو یک دستیار فارسی‌زبان دوستانه مثل هوشا هستی. جواب‌ها را فارسی و روان بده.\n" + history.slice(-6).join("\n") + "\nدستیار:";
-  const load = document.createElement("div");
-  load.className = "msg bot typing";
-  load.textContent = "در حال فکر کردن...";
-  chat.appendChild(load);
-  chat.scrollTop = chat.scrollHeight;
+  history.push({ role: "user", content: text });
+  // فقط ۶ پیام آخر + پیام سیستمی نگه داشته می‌شود
+  if(history.length > 7){
+    history = [history[0], ...history.slice(-6)];
+  }
+
+  const load = addMsg("در حال فکر کردن...", "bot typing");
+
   try{
-    const res = await fetch("https://text.pollinations.ai/" + encodeURIComponent(fullPrompt) + "?model=openai");
-    const reply = await res.text();
+    const res = await fetch("https://text.pollinations.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai",
+        messages: history
+      })
+    });
+
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const reply = (data.choices && data.choices[0] && data.choices[0].message.content || "").trim() || "پاسخی دریافت نشد.";
+
+    history.push({ role: "assistant", content: reply });
     load.remove();
-    history.push("دستیار: " + reply);
-    chat.innerHTML += `<div class="msg bot">${reply.replace(/</g,"&lt;")}</div>`;
+    addMsg(reply, "bot");
   } catch(e){
     load.remove();
-    chat.innerHTML += `<div class="msg bot">خطا در اتصال. لطفا دوباره تلاش کن.</div>`;
+    addMsg("خطا در اتصال. لطفا دوباره تلاش کن.", "bot");
+    console.error(e);
   }
   chat.scrollTop = chat.scrollHeight;
 }
