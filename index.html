@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>هوشا مینی | بدون نیاز به کلید</title>
+<style>
+* { box-sizing: border-box; font-family: Tahoma, sans-serif; }
+body { margin: 0; background: #f5f6fb; color: #222; }
+header { background: linear-gradient(135deg, #ff7a18, #ff3d77); color: white; padding: 20px; text-align: center; }
+header h1 { margin: 0; font-size: 22px; }
+header p { margin: 6px 0 0; font-size: 13px; opacity: .9; }
+#chat { max-width: 800px; margin: 16px auto; background: white; border-radius: 14px; height: 60vh; overflow-y: auto; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.msg { margin: 10px 0; padding: 11px 14px; border-radius: 12px; line-height: 1.9; font-size: 14px; white-space: pre-wrap; max-width: 88%; }
+.user { background: #ffefe6; margin-right: auto; border: 1px solid #ffd9c2; }
+.bot { background: #f1f2f7; margin-left: auto; border: 1px solid #e3e5ee; }
+.typing { opacity: .6; }
+.box { max-width: 800px; margin: 0 auto 30px; display: flex; gap: 8px; padding: 0 12px; }
+#input { flex: 1; padding: 13px; border-radius: 12px; border: 1px solid #ddd; font-size: 14px; }
+#send { background: #ff5a2b; color: white; border: none; border-radius: 12px; padding: 0 28px; font-size: 15px; cursor: pointer; }
+.status { max-width: 800px; margin: 0 auto; text-align: center; font-size: 12px; color: #2e7d32; background: #e8f5e9; border-radius: 20px; padding: 6px; }
+</style>
+</head>
+<body>
+<header>
+<h1>هوش مصنوعی hop خوش  امدید نسخه ۱</h1>
+<p>>
+</header>
+<div class="status">● متصل به سرور رایگان و بدون محدودیتdiv>
+<div id="chat">
+<div class="msg bot">سلام! 🌟 من آماده‌ام. هر سوالی داری بپرس، بدون این‌که لازم باشه کاری بکنی.</div>
+</div>
+<div class="box">
+<input id="input" placeholder="پیامت را بنویس..." onkeypress="if(event.key==='Enter') send()">
+<button id="send" onclick="send()">ارسال</button>
+</div>
+<script>
+let history = [];
+async function send(){
+  const input = document.getElementById("input");
+  const chat = document.getElementById("chat");
+  const text = input.value.trim();
+  if(!text) return;
+  chat.innerHTML += `<div class="msg user">${text.replace(/</g,"&lt;")}</div>`;
+  input.value = "";
+  chat.scrollTop = chat.scrollHeight;
+  history.push("کاربر: " + text);
+  let fullPrompt = "تو یک دستیار فارسی‌زبان دوستانه مثل هوشا هستی. جواب‌ها را فارسی و روان بده.\n" + history.slice(-6).join("\n") + "\nدستیار:";
+  const load = document.createElement("div");
+  load.className = "msg bot typing";
+  load.textContent = "در حال فکر کردن...";
+  chat.appendChild(load);
+  chat.scrollTop = chat.scrollHeight;
+  try{
+    const res = await fetch("https://text.pollinations.ai/" + encodeURIComponent(fullPrompt) + "?model=openai");
+    const reply = await res.text();
+    load.remove();
+    history.push("دستیار: " + reply);
+    chat.innerHTML += `<div class="msg bot">${reply.replace(/</g,"&lt;")}</div>`;
+  } catch(e){
+    load.remove();
+    chat.innerHTML += `<div class="msg bot">خطا در اتصال. لطفا دوباره تلاش کن.</div>`;
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
+</body>
+</html>
